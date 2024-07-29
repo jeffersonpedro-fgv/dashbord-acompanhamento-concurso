@@ -2,34 +2,35 @@
 # visit http://127.0.0.1:8050/ in your web browser.
 
 
-from dash import Dash, html, dcc
 import plotly.express as px
+import plotly.graph_objects as go
 import pandas as pd
+from dash import Dash, html, dcc
+from graphics import Graphics
 
-app = Dash(__name__)
+class App:
+    def __init__(self):
+        self.graphics = Graphics()
+        self.app = Dash(__name__)
+        self.setup_layout()
 
-# assume you have a "long-form" data frame
-# see https://plotly.com/python/px-arguments/ for more options
-df = pd.DataFrame({
-    "Fruit": ["Apples", "Oranges", "Bananas", "Apples", "Oranges", "Bananas"],
-    "Amount": [4, 1, 2, 2, 4, 5],
-    "City": ["SF", "SF", "SF", "Montreal", "Montreal", "Montreal"]
-})
+    def setup_layout(self):
 
-fig = px.bar(df, x="Fruit", y="Amount", color="City", barmode="group")
+        donut_chart = self.graphics.criarGraficoDonutChart()
 
-app.layout = html.Div(children=[
-    html.H1(children='Hello Dash'),
+        # Layout do aplicativo
+        self.app.layout = html.Div(children=[
+            html.H1(children='FGV Conhecimento'),
+            html.H2(children='Seu Dashboard de acompanhamento de concursos'),
+            html.Img(src='/resources/fgv-logo.png', style={'width': '150px', 'height': 'auto', 'display': 'block', 'margin': 'auto'}),
 
-    html.Div(children='''
-        Dash: A web application framework for your data.
-    '''),
+            dcc.Graph(
+                id='donut-chart',
+                figure=donut_chart
+            )
+        ])
 
-    dcc.Graph(
-        id='example-graph',
-        figure=fig
-    )
-])
-
+#instância da classe App para iniciar o aplicativo
 if __name__ == '__main__':
-    app.run(debug=True)
+    app_instance = App()
+    app_instance.app.run(debug=True)
