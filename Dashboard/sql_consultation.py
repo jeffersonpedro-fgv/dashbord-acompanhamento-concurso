@@ -20,6 +20,7 @@ class SQLConsultation:
             yield conn
         finally:
             conn.close()
+
     def totalCandidatos(self):
         with self.get_connection() as conn:
             cursor = conn.cursor()
@@ -47,6 +48,7 @@ class SQLConsultation:
             return totalRecursos
 
     def totalRecursosPorCargo(self):
+
         with self.get_connection() as conn:
             cursor = conn.cursor()
             comando = '''
@@ -70,66 +72,61 @@ class SQLConsultation:
 
             print("Total Recursos por Cargo:")
             print(totalRecursosCargo)
-            print("Chamado por:")
-            traceback.print_stack()  # Imprime o rastreamento da pilha
+            # print("Chamado por:")
+            # traceback.print_stack()  # Imprime o rastreamento da pilha
             return totalRecursosCargo
 
-    # def totalRecursosPorCargo(self):
-    #     def totalCargo():
-    #         comando = "SELECT CARR as Carreira FROM carreira"
-    #         self.cursor.execute(comando)
-    #         totalCarreira = self.cursor.fetchall()
-    #
-    #         colunasTotalCarr = [desc[0] for desc in self.cursor.description]
-    #         totalCarreira = pd.DataFrame(totalCarreira, columns=colunasTotalCarr)
-    #
-    #         num_carreiras = totalCarreira.shape[0]  # Total de registros
-    #         nomeCarreiras = totalCarreira['Carreira'].tolist()  # Lista com o conteudo dos registros
-    #
-    #         print(totalCarreira)
-    #         print(f'Total de Carreiras: {num_carreiras}')
-    #         print(f'Nome das Carreiras: {nomeCarreiras}')
-    #         return totalCarreira, num_carreiras, nomeCarreiras
-    #
-    #     def totalRecusoCargoEDisciplina():
-    #         comando = (
-    #             "SELECT "
-    #             "rec.questao as Questão, "
-    #             "rec.sigla as Sigla, "
-    #             "car.CARR as 'Cargo', "
-    #             "q.QUESTAO_NOME as 'Questão', "
-    #             "COUNT(rec.protocolo) as 'Total Recursos' "
-    #             "FROM "
-    #             "recursos as rec "
-    #             "INNER JOIN questao as q "
-    #             "ON rec.questao = q.IDQUESTAO "
-    #             "INNER JOIN carreira as car "
-    #             "ON rec.sigla = car.SIGLA "
-    #             "GROUP BY "
-    #             "rec.questao;"
-    #         )
-    #         self.cursor.execute(comando)
-    #         totalRecusosCargo = self.cursor.fetchall()
-    #
-    #         colunasTotalRecCargo = [desc[0] for desc in self.cursor.description]
-    #         totalRecusosCargo = pd.DataFrame(totalRecusosCargo, columns=colunasTotalRecCargo)
-    #
-    #         somaRecCarr = pd.DataFrame(
-    #             totalRecusosCargo.groupby('Cargo')['Total Recursos'].sum().reset_index())  # Soma de recurso por cargo
-    #
-    #         print(totalRecusosCargo)
-    #         print(somaRecCarr)
-    #         return totalRecusosCargo, somaRecCarr
-    #
-    #     # Chamar as funções internas e retornar seus resultados
-    #     totalCarreira, num_carreiras, nomeCarreiras = totalCargo()
-    #     totalRecusosCargo, somaRecCarr = totalRecusoCargoEDisciplina()
-    #
-    #     return totalCarreira, num_carreiras, nomeCarreiras, totalRecusosCargo, somaRecCarr
-    #
-    #     # Chamar a função principal
-    #     totalCarreira, num_carreiras, nomeCarreiras, totalRecusosCargo, somaRecCarr = totalRecursosPorCargo()
-    #
-    #     # Fechar a conexão com o banco de dados
-    #     self.cursor.close()
-    #     self.conn.close()
+    def totalRespostasPorCargo(self):
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            comando = '''
+                SELECT 
+                    rec.sigla as Sigla, 
+                    car.CARR as 'Cargo', 
+                    COUNT(rec.protocolo) as 'Total Recursos',  
+                    COUNT(CASE WHEN rec.respondido = 1 THEN rec.respondido END) AS 'Total Respostas' 
+                FROM 
+                    recursos as rec 
+                INNER JOIN 
+                    questao as q 
+                    ON rec.questao = q.IDQUESTAO 
+                INNER JOIN 
+                    carreira as car 
+                    ON rec.sigla = car.SIGLA 
+                GROUP BY 
+                    car.CARR;
+            '''
+            cursor.execute(comando)
+            totalRespostaCargo = cursor.fetchall()
+
+            colunasTotalAcesso = [desc[0] for desc in cursor.description]
+            totalRespostaCargo = pd.DataFrame(totalRespostaCargo, columns=colunasTotalAcesso)
+
+            print("Total de Respostas por Cargo:")
+            print(totalRespostaCargo)
+            return totalRespostaCargo
+
+    def totalAcessoSistema(self):
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            comando = '''
+                SELECT 
+                    DATE(dtInclusao) as Data, 
+                    HOUR(dtInclusao) as Hora,
+                    COUNT(*) as 'Total de Acessos'
+                FROM 
+                    recursos 
+                GROUP BY 
+                    DATE(dtInclusao), HOUR(dtInclusao)
+                ORDER BY 
+                    Data, Hora;
+                '''
+            cursor.execute(comando)
+            resultado = cursor.fetchall()
+
+            colunasTotalAcesso = [desc[0] for desc in cursor.description]
+            acessoSystem = pd.DataFrame(resultado, columns=colunasTotalAcesso)
+
+            print("Total de Acessos:")
+            print(acessoSystem)
+            return acessoSystem
