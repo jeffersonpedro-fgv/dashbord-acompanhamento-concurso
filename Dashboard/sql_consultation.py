@@ -7,19 +7,43 @@ import numpy as np
 
 
 class SQLConsultation:
+
+    def __init__(self):
+        self.host = 'ALH001-DEV'
+        self.user = 'fgv'
+        self.password = 'rY44ob7N'
+        self.database = 'apresentacao2024_recursos_dis'
+
     @contextmanager
-    def get_connection(self):
+    def get_connection(self, database=None):
+        if database is None:
+            database = self.database
         conn = mysql.connector.connect(
-            host='ALH001-DEV',
-            user='fgv',
-            password='rY44ob7N',
-            database='apresentacao2024_recursos_dis',
+            host=self.host,
+            user=self.user,
+            password=self.password,
+            database=database,
             charset='utf8'
         )
         try:
             yield conn
         finally:
             conn.close()
+
+    def list_databases(self):
+        with self.get_connection(database=None) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SHOW DATABASES;")
+            databases = cursor.fetchall()
+
+            # Retorna uma lista de bancos de dados
+            database_list = [db[0] for db in databases]
+
+            # Exibir a lista no console (para debug)
+            print("Lista de Databases: ", database_list)
+
+            # Retorna uma lista de dicionários para o Dash Dropdown
+            return database_list
 
     def totalCandidatos(self):
         with self.get_connection() as conn:
@@ -31,7 +55,9 @@ class SQLConsultation:
             colunasTotalCand = [desc[0] for desc in cursor.description]
             totalCandidatos = pd.DataFrame(totalCandidatos, columns=colunasTotalCand)
 
-            print(totalCandidatos)
+            totalCandidatos = totalCandidatos.iloc[0,0]
+
+            print(f"Total de Candidados: {totalCandidatos}" )
             return totalCandidatos
 
     def totalRecursos(self):
@@ -44,7 +70,9 @@ class SQLConsultation:
             colunasTotalRec = [desc[0] for desc in cursor.description]
             totalRecursos = pd.DataFrame(totalRecursos, columns=colunasTotalRec)
 
-            print(totalRecursos)
+            totalRecursos = totalRecursos.iloc[0, 0]
+
+            print(f"Total de Recursos: {totalRecursos}")
             return totalRecursos
 
     def totalRecursosPorCargo(self):
