@@ -19,10 +19,13 @@ class Graphics:
     def criarGraficoDonutChart(self):
         data = self.sqlConsultation.totalRecursosPorCargo()
 
+        # Truncar os rótulos dos cargos usando a função truncate_label
+        data['Cargo'] = data['Cargo'].apply(self.truncate_label)
+
         labels = data['Cargo']
         values = data['Total Recursos']
 
-        # Use `hole` to create a donut-like pie chart
+        # Configurações do gráfico
         self.fig = go.Figure(
             data=[go.Pie(
                 labels=labels,
@@ -31,10 +34,18 @@ class Graphics:
                 textinfo='percent',
                 insidetextorientation='radial'
             )])
-        self.fig.update_layout(title_text="Recursos por Cargos")
+
+        # Atualiza o layout do gráfico
+        self.fig.update_layout(
+            title_text="Recursos por Cargos",
+            title_x=0.5,
+            title_font_size=18,
+            margin=dict(t=50, b=50, l=50, r=50)
+        )
+
         return self.fig
 
-    def criarGraficoExponentFormat(self):
+    def criarGraficoLineChart(self):
         data = self.sqlConsultation.totalAcessoSistema()
 
         # Obtem listas de dias únicos e as horas associadas
@@ -71,7 +82,13 @@ class Graphics:
 
         # Atualizar o layout do gráfico
         fig.update_layout(
-            title='Acessos ao Sistema por Dia',
+            title={
+               'text': 'Acessos ao Sistema por Dia',
+                'x': 0.5,
+                'xanchor' : 'center',
+                'yanchor': 'top',
+                'font': {'size':18}
+            },
             xaxis=dict(title='Dias'),
             yaxis=dict(
                 title='Total de Acessos',
@@ -100,6 +117,9 @@ class Graphics:
 
         data['Porcentual Corrigido'] = (data['Total Respostas'] / data['Total Recursos']) * 100
 
+        # Truncar os rótulos dos cargos usando a função truncate_label
+        data['Cargo'] = data['Cargo'].apply(self.truncate_label)
+
         # Criar o gráfico de barras horizontal
         fig = go.Figure()
         fig.add_trace(go.Bar(
@@ -108,15 +128,18 @@ class Graphics:
             orientation='h',
             text=data['Porcentual Corrigido'].apply(lambda x: f'{x:.2f}%'),
             textposition='inside', # Mostra o texto dentro das barras
-            # marker=dict(
-            #     color='rgba(55, 83, 109, 0.6)',
-            #     line=dict(color='rgba(55, 83, 109, 1.0)', width=2)
-            # )
+
         ))
 
         # Atualizar o layout do gráfico
         fig.update_layout(
-            title='Porcentagem de Recursos Corrigidos Por Cargo',
+            title={
+                'text':'Porcentagem de Recursos Corrigidos Por Cargo',
+                'x':0.5,
+                'xanchor':'center',
+                'yanchor': 'top'
+            },
+            title_font_size=18,
             xaxis=dict(
                 title='Percentual Corrigido (%)',
                 range=[0,100], # Define o intervalo do eixo X
@@ -129,3 +152,10 @@ class Graphics:
             plot_bgcolor='rgba(245, 246, 249, 1)'
         )
         return fig
+
+    # Função para truncar legendas
+    def truncate_label(self, label, max_length=41):
+        if len(label) > max_length:
+            return label[:max_length] + '...'
+        else:
+            return label
