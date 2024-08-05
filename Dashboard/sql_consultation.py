@@ -1,10 +1,7 @@
-import traceback
 from contextlib import contextmanager
 
 import mysql.connector
 import pandas as pd
-import numpy as np
-
 
 class SQLConsultation:
 
@@ -12,17 +9,18 @@ class SQLConsultation:
         self.host = 'ALH001-DEV'
         self.user = 'fgv'
         self.password = 'rY44ob7N'
-        self.database = 'apresentacao2024_recursos_dis'
-
+        self.database = 'apresentacao2024_recursos_dis' # Banco de dados padrão
+        print('Class SQL - Database no construtor: ', self.database)
     @contextmanager
-    def get_connection(self, database=None):
-        if database is None:
-            database = self.database
+    def get_connection(self):
+
+        print("Class SQL - Conectado ao banco de dados:", self.database)
+
         conn = mysql.connector.connect(
             host=self.host,
             user=self.user,
             password=self.password,
-            database=database,
+            database=self.database,
             charset='utf8'
         )
         try:
@@ -31,7 +29,7 @@ class SQLConsultation:
             conn.close()
 
     def list_databases(self):
-        with self.get_connection(database=None) as conn:
+        with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SHOW DATABASES;")
             databases = cursor.fetchall()
@@ -45,6 +43,11 @@ class SQLConsultation:
             # Retorna uma lista de dicionários para o Dash Dropdown
             return database_list
 
+    def update_database(self, database):
+        # Atualiza o banco de dados
+        print(f"Class SQL - Atualizando o banco de dados de {self.database} para {database}")
+        self.database = database
+
     def totalCandidatos(self):
         with self.get_connection() as conn:
             cursor = conn.cursor()
@@ -55,9 +58,9 @@ class SQLConsultation:
             colunasTotalCand = [desc[0] for desc in cursor.description]
             totalCandidatos = pd.DataFrame(totalCandidatos, columns=colunasTotalCand)
 
-            totalCandidatos = totalCandidatos.iloc[0,0]
+            totalCandidatos = totalCandidatos.iloc[0, 0]
 
-            print(f"Total de Candidados: {totalCandidatos}" )
+            print(f"Total de Candidados: {totalCandidatos}")
             return totalCandidatos
 
     def totalRecursos(self):
@@ -98,10 +101,8 @@ class SQLConsultation:
             colunasTotalRec = [desc[0] for desc in cursor.description]
             totalRecursosCargo = pd.DataFrame(totalRecursosCargo, columns=colunasTotalRec)
 
-            print("Total Recursos por Cargo:")
-            print(totalRecursosCargo)
-            # print("Chamado por:")
-            # traceback.print_stack()  # Imprime o rastreamento da pilha
+            # print("Total Recursos por Cargo:")
+            # print(totalRecursosCargo)
             return totalRecursosCargo
 
     def totalRespostasPorCargo(self):
@@ -130,8 +131,8 @@ class SQLConsultation:
             colunasTotalAcesso = [desc[0] for desc in cursor.description]
             totalRespostaCargo = pd.DataFrame(totalRespostaCargo, columns=colunasTotalAcesso)
 
-            print("Total de Respostas por Cargo:")
-            print(totalRespostaCargo)
+            # print("Total de Respostas por Cargo:")
+            # print(totalRespostaCargo)
             return totalRespostaCargo
 
     def totalAcessoSistema(self):
@@ -155,6 +156,9 @@ class SQLConsultation:
             colunasTotalAcesso = [desc[0] for desc in cursor.description]
             acessoSystem = pd.DataFrame(resultado, columns=colunasTotalAcesso)
 
-            print("Total de Acessos:")
-            print(acessoSystem)
+            # print("Total de Acessos:")
+            # print(acessoSystem)
             return acessoSystem
+
+    # def update_database(self, database):
+    #     self.database = database
