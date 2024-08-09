@@ -1,11 +1,9 @@
-# graphics.py
-from dash import Dash, html, dcc
 import plotly.graph_objects as go
 from sql_consultation import SQLConsultation
 
 class Graphics:
-    def __init__(self):
-        self.sqlConsultation = SQLConsultation()
+    def __init__(self, sqlConsultation):
+       self.sqlConsultation = sqlConsultation
 
 
     def criaCardTotalRecurso(self):
@@ -115,7 +113,7 @@ class Graphics:
     def criarGraficoHorizontalBar(self):
         data = self.sqlConsultation.totalRespostasPorCargo()
 
-        data['Porcentual Corrigido'] = (data['Total Respostas'] / data['Total Recursos']) * 100
+        data['Porcentual Analisado'] = (data['Total Respostas'] / data['Total Recursos']) * 100
 
         # Truncar os rótulos dos cargos usando a função truncate_label
         data['Cargo'] = data['Cargo'].apply(self.truncate_label)
@@ -124,9 +122,9 @@ class Graphics:
         fig = go.Figure()
         fig.add_trace(go.Bar(
             y=data['Cargo'],
-            x=data['Porcentual Corrigido'],
+            x=data['Porcentual Analisado'],
             orientation='h',
-            text=data['Porcentual Corrigido'].apply(lambda x: f'{x:.2f}%'),
+            text=data['Porcentual Analisado'].apply(lambda x: f'{x:.2f}%'),
             textposition='inside', # Mostra o texto dentro das barras
 
         ))
@@ -134,14 +132,14 @@ class Graphics:
         # Atualizar o layout do gráfico
         fig.update_layout(
             title={
-                'text':'Porcentagem de Recursos Corrigidos Por Cargo',
+                'text':'Porcentagem de Recursos Analisados Por Cargo',
                 'x':0.5,
                 'xanchor':'center',
                 'yanchor': 'top'
             },
             title_font_size=18,
             xaxis=dict(
-                title='Percentual Corrigido (%)',
+                title='Percentual Analisado (%)',
                 range=[0,100], # Define o intervalo do eixo X
                 tickvals=[0,20,40,60,80,100]
             ),
