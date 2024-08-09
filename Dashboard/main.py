@@ -4,75 +4,78 @@ from dash import Dash, html, dcc, Output, Input
 from graphics import Graphics
 from sql_consultation import SQLConsultation
 
+
 class App:
     def __init__(self):
-        self.graphics = Graphics()
-        self.dbManager = SQLConsultation()
-        self.app = Dash(__name__)  #external_stylesheets=['assets/style.css'])  # Carrega o arquivo CSS
+        self.dbManager = SQLConsultation()  # Instância única de SQLConsultation
+        self.graphics = Graphics(self.dbManager)  # Passa a instância para Graphics
+        self.app = Dash(__name__)
+        self.totalRecursos = None
+        self.totalCandidatos = None
+        self.totalAcessos = None
+        self.totalRecursosCargo = None
+        self.totalRespostasPorCargo = None
         self.setup_layout()
+
+    def update_data(self):
+        # Atualiza os dados e gráficos
+        self.totalRecursos = self.graphics.criaCardTotalRecurso()
+        self.totalCandidatos = self.graphics.criaCardTotalCandidato()
+        self.totalAcessos = self.graphics.criarGraficoLineChart()
+        self.totalRecursosCargo = self.graphics.criarGraficoDonutChart()
+        self.totalRespostasPorCargo = self.graphics.criarGraficoHorizontalBar()
+
+        print("Class Main - Dados atualizados")
+        print(self.totalCandidatos)
 
     def setup_layout(self):
 
         listaDatabases = self.dbManager.list_databases()
-        print("Lista no Setup:" ,listaDatabases)  # Verifique a saída aqui
-        options = [{'label': db, 'value': db} for db in listaDatabases]
-        print("Options" , options)
 
-        totalAcessos = self.graphics.criarGraficoLineChart()
-        totalRecursosCargo = self.graphics.criarGraficoDonutChart()
-        totalRespostasPorCargo = self.graphics.criarGraficoHorizontalBar()
-
-        totalRecursos = self.graphics.criaCardTotalRecurso()
-        totalCandidatos = self.graphics.criaCardTotalCandidato()
-
-
+        self.update_data()
 
         # Layout do aplicativo
         self.app.layout = html.Div(
             children=[
-                # Div para o Cabeçalho
                 html.Div(
                     children=[
                         html.Img(src='assets/fgv-logo.png'),
                         html.H2(children='Página de acompanhamento de concursos'),
                     ],
-                    className='dash-header'  # Classe CSS para o cabeçalho
+                    className='dash-header'
                 ),
 
                 html.Div(
                     children=[
-                        html.P("Selecione a Base de Dados"),
+                        html.P("Selecione um concurso"),
                         dcc.Dropdown(
                             id='database-dropdown',
-                            options=options,
-                            placeholder="Selecione uma base de dados",
+                            options=listaDatabases,
+                            placeholder="Nenhum Concurso selecionado",
+                            value=None
                         )
                     ],
-                    className='dash-dropdown'  # Classe CSS para o dropdown
+                    className='dash-dropdown'
                 ),
 
-                # Div para os Cards
                 html.Div(
                     children=[
-                        # Card Total de Recursos
                         html.Div(
                             children=[
                                 html.H3("Total de Recursos"),
-                                html.P(f"{totalRecursos}"),
+                                html.P(id='total-recursos', children="Dados não carregados"),
                             ],
                             className='card'
                         ),
 
-                        # Card Total de Candidatos
                         html.Div(
                             children=[
                                 html.H3("Total de Candidatos"),
-                                html.P(f"{totalCandidatos}"),
+                                html.P(id='total-candidatos', children="Dados não carregados"),
                             ],
                             className='card'
                         ),
 
-                        # Card de Relatório
                         html.Div(
                             children=[
                                 html.H3("Relatório"),
@@ -82,7 +85,6 @@ class App:
                             className='card'
                         ),
 
-                        # Card de Atualização
                         html.Div(
                             children=[
                                 html.H3("Ultima Atualização"),
@@ -91,63 +93,56 @@ class App:
                             className='card'
                         ),
                     ],
-                    className='dash-cards'  # Classe CSS para a área de cards
+                    className='dash-cards'
                 ),
 
-                # Div com os dois gráficos lado a lado
                 html.Div(
                     children=[
                         html.Div(
                             children=[
-                                # Gráfico de Barras Horizontais
                                 dcc.Graph(
                                     id='horizontal-barchart',
-                                    figure=totalRespostasPorCargo,
+                                    figure={},
                                     className='side-by-side-graph'
                                 ),
 
-                                # Gráfico de Pizza
                                 dcc.Graph(
                                     id='donut-chart',
-                                    figure=totalRecursosCargo,
+                                    figure={},
                                     className='side-by-side-graph'
                                 )
                             ],
-                            className='two-graphs-container'  # Classe CSS para a área dos gráficos lado a lado
+                            className='two-graphs-container'
                         ),
 
-                        # Div com o gráfico de linha
                         html.Div(
                             children=[
                                 dcc.Graph(
-                                    id='exponent-format',
-                                    figure=totalAcessos,
+                                    id='line-chart',
+                                    figure={},
                                     className='full-width-graph'
                                 )
                             ],
-                            className='full-width-container'  # Classe CSS para a área do gráfico de linha
+                            className='full-width-container'
                         )
                     ],
-                    className='dash-content'  # Classe CSS para a área de gráficos
+                    className='dash-content'
                 ),
 
-
-                # Div para o Rodapé
                 html.Div(
                     children=[
                         html.P(children='Copyright© 2024 Fundação Getulio Vargas. Todos direitos reservados')
                     ],
-                    className='dash-baseboard'  # Classe CSS para o cabeçalho
+                    className='dash-baseboard'
                 ),
 
-                # Componente Intervalo para atualizações em tempo real
                 dcc.Interval(
                     id='interval-component',
-                    interval=1 * 60 * 1000,  # Atualiza a cada 1 minuto (em milissegundos)
+                    interval=1 * 60 * 1000,
                     n_intervals=0
                 )
             ],
-            className='dash-container'  # Classe CSS para o contêiner principal
+            className='dash-container'
         )
 
         # Callback para atualizar o tempo de atualização
@@ -159,6 +154,42 @@ class App:
             now = datetime.now()
             current_time = now.strftime("%d/%m/%Y - %H:%M:%S")
             return f"Atualizado em: {current_time}"
+        
+        # Callback para atualizar grafivis e cards
+        @self.app.callback([
+            Output('total-recursos', 'children'),
+            Output('total-candidatos', 'children'),
+            Output('horizontal-barchart', 'figure'),
+            Output('donut-chart', 'figure'),
+            Output('line-chart', 'figure')
+            ],
+            Input('database-dropdown', 'value')
+        )
+        def update_chart(selected_database):
+
+            if selected_database is None:
+                return (
+                    "Concurso não selecionado",
+                    "Concurso não selecionado",
+                    {},{},{}
+                    )
+
+            print(f"Class Main - Base Selecionada: {selected_database}")
+            self.dbManager.update_database(selected_database)
+            self.update_data()  # Recarrega os dados com a nova base
+
+            print('------ Class Main: Metodo Register CallBacks  -----')
+            print(self.totalRecursos)
+
+            # Retorna os novos valores para os componentes
+            return (
+                self.totalRecursos,
+                self.totalCandidatos,
+                self.totalRespostasPorCargo,
+                self.totalRecursosCargo,
+                self.totalAcessos
+            )
+
 
 # Instância da classe App para iniciar o aplicativo
 if __name__ == '__main__':
