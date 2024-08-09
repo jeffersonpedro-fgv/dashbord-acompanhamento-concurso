@@ -10,55 +10,62 @@ class SQLConsultation:
         self.user = 'fgv'
         self.password = 'rY44ob7N'
         self.database = 'apresentacao2024_recursos_dis' # Banco de dados padrão
-        print('Class SQL - Database no construtor: ', self.database)
+
     @contextmanager
     def get_connection(self):
 
-        print("Class SQL - Conectado ao banco de dados:", self.database)
+        print("Class SQL - Conectado ao banco de dados(get_connection):", self.database)
 
-        conn = mysql.connector.connect(
-            host=self.host,
-            user=self.user,
-            password=self.password,
-            database=self.database,
-            charset='utf8'
-        )
+        # if self.database is None:
+        #     database = self.database
+
         try:
+            conn = mysql.connector.connect(
+                host=self.host,
+                user=self.user,
+                password=self.password,
+                database=self.database,
+                charset='utf8'
+            )
             yield conn
+        except mysql.connector.Error as err:
+            print(f"Erro ao conectar ao banco de dados: {err}")
+            raise
         finally:
-            conn.close()
+            if 'conn' in locals() and conn.is_connected():
+                conn.close()
 
     def list_databases(self):
+
+        print(f"Class SQL - Tentando listar bancos com o database: {self.database}")
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SHOW DATABASES;")
             databases = cursor.fetchall()
 
-            # Retorna uma lista de bancos de dados
-            database_list = [db[0] for db in databases]
+            # Retorna uma lista de dicionários para o Dropdown filtrando apenas os bancos de dados que terminam com '_recursos_dis'
+            database_list = [{'label': db[0], 'value': db[0]} for db in databases if db[0].endswith('_recursos_dis')]
 
             # Exibir a lista no console (para debug)
             print("Lista de Databases: ", database_list)
 
-            # Retorna uma lista de dicionários para o Dash Dropdown
             return database_list
 
     def update_database(self, database):
+
         # Atualiza o banco de dados
-        print(f"Class SQL - Atualizando o banco de dados de {self.database} para {database}")
+        print(f"Class SQL - Recebendo a nova base de dados {database}")
         self.database = database
+        print(f"Class SQL - Base atualizada para: {self.database}")
 
     def totalCandidatos(self):
+        print(f"Class SQL - Tentando buscar total de candidatos com o database: {self.database}")
         with self.get_connection() as conn:
             cursor = conn.cursor()
             comando = "SELECT COUNT(codigo) as 'Total Candidatos' FROM cadastro"
             cursor.execute(comando)
-            totalCandidatos = cursor.fetchall()
-
-            colunasTotalCand = [desc[0] for desc in cursor.description]
-            totalCandidatos = pd.DataFrame(totalCandidatos, columns=colunasTotalCand)
-
-            totalCandidatos = totalCandidatos.iloc[0, 0]
+            # totalCandidatos = cursor.fetchall()
+            totalCandidatos = cursor.fetchone()[0]
 
             print(f"Total de Candidados: {totalCandidatos}")
             return totalCandidatos
@@ -159,6 +166,3 @@ class SQLConsultation:
             # print("Total de Acessos:")
             # print(acessoSystem)
             return acessoSystem
-
-    # def update_database(self, database):
-    #     self.database = database
