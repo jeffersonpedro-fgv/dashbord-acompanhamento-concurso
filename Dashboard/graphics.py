@@ -43,6 +43,47 @@ class Graphics:
 
         return self.fig
 
+    def criarGraficoHorizontalBar(self):
+        data = self.sqlConsultation.totalRespostasPorCargo()
+
+        data['Porcentual Analisado'] = (data['Total Respostas'] / data['Total Recursos']) * 100
+
+        # Truncar os rótulos dos cargos usando a função truncate_label
+        data['Cargo'] = data['Cargo'].apply(self.truncate_label)
+
+        # Criar o gráfico de barras horizontal
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            y=data['Cargo'],
+            x=data['Porcentual Analisado'],
+            orientation='h',
+            text=data['Porcentual Analisado'].apply(lambda x: f'{x:.2f}%'),
+            textposition='inside', # Mostra o texto dentro das barras
+
+        ))
+
+        # Atualizar o layout do gráfico
+        fig.update_layout(
+            title={
+                'text':'Porcentagem de Recursos Analisados Por Cargo',
+                'x':0.5,
+                'xanchor':'center',
+                'yanchor': 'top'
+            },
+            title_font_size=18,
+            xaxis=dict(
+                title='Percentual Analisado (%)',
+                range=[0,100], # Define o intervalo do eixo X
+                tickvals=[0,20,40,60,80,100]
+            ),
+            yaxis=dict(
+                title='Cargo'
+            ),
+            bargap=0.2, # Espaço entre as barras
+            plot_bgcolor='rgba(245, 246, 249, 1)'
+        )
+        return fig
+    
     def criarGraficoLineChart(self):
         data = self.sqlConsultation.totalAcessoSistema()
 
@@ -110,45 +151,73 @@ class Graphics:
         )
         return fig
 
-    def criarGraficoHorizontalBar(self):
-        data = self.sqlConsultation.totalRespostasPorCargo()
+    def criarGaficoVerticalBar(self, cargo_selected):
 
-        data['Porcentual Analisado'] = (data['Total Respostas'] / data['Total Recursos']) * 100
+        data = self.sqlConsultation.totalRespostaPorQuestao()
 
-        # Truncar os rótulos dos cargos usando a função truncate_label
-        data['Cargo'] = data['Cargo'].apply(self.truncate_label)
+        df_filter = data[data['CodQuestão'] == cargo_selected]
 
-        # Criar o gráfico de barras horizontal
+        df_filter['Total %'] = (df_filter['Total Recursos'] / df_filter['Total Recursos'].sum()) * 100
+        df_filter['Respondidos %'] = (df_filter['Respondidos'] / df_filter['Total Recursos'].sum()) * 100
+        df_filter['Não Respondidos %'] = (df_filter['Não Respondidos'] / df_filter['Total Recursos'].sum()) * 100
+
+        # print('Class Graphics - Retornando Cargo selecionado: ', cargo_selected)
+        # print('Class Graphics - Retornando os dados de data: ', data)
+        # print('Class Graphics - Retornando os dados de df_filter: ', df_filter)
+
+        # Criar o gráfico
         fig = go.Figure()
-        fig.add_trace(go.Bar(
-            y=data['Cargo'],
-            x=data['Porcentual Analisado'],
-            orientation='h',
-            text=data['Porcentual Analisado'].apply(lambda x: f'{x:.2f}%'),
-            textposition='inside', # Mostra o texto dentro das barras
 
+        #Criando as barras
+        fig.add_trace(go.Bar(
+            x=df_filter['Questão'],
+            y=df_filter['Total %'],
+            name='Total Recursos',
+            marker_color = '#404040',
+            hovertemplate='%{y:.2f}%<br>Total Recursos',
+            text=df_filter['Total %'].apply(lambda x: f'{x:.2f}%'),
+            textposition='outside', #'inside'
+            width=0.2
         ))
 
-        # Atualizar o layout do gráfico
+        fig.add_trace(go.Bar(
+            x=df_filter['Questão'],
+            y=df_filter['Respondidos %'],
+            name= 'Respondidos',
+            marker_color='#636EFA',
+            hovertemplate='%{y:.2f}%<br>Respondidos',
+            text=df_filter['Respondidos %'].apply(lambda x: f'{x:.2f}%'),
+            textposition='outside', #'inside'
+            width=0.2
+        ))
+
+        fig.add_trace(go.Bar(
+            x=df_filter['Questão'],
+            y=df_filter['Não Respondidos %'],
+            name= 'Não Respondidos',
+            marker_color='#EF553B',
+             hovertemplate='%{y:.2f}%<br>Não Respondidos',
+            text=df_filter['Não Respondidos %'].apply(lambda x: f'{x:.2f}%'),
+            textposition='outside', #'inside'
+            width=0.2
+        ))
+
+        #Configurações do layout
         fig.update_layout(
-            title={
-                'text':'Porcentagem de Recursos Analisados Por Cargo',
-                'x':0.5,
-                'xanchor':'center',
-                'yanchor': 'top'
-            },
-            title_font_size=18,
-            xaxis=dict(
-                title='Percentual Analisado (%)',
-                range=[0,100], # Define o intervalo do eixo X
-                tickvals=[0,20,40,60,80,100]
-            ),
+            barmode='group',
             yaxis=dict(
-                title='Cargo'
+                title='Porcentagem (%)',
+                tickvals=[0,25,50,75,100],
+                ticktext=['0', '25', '50', '75', '100']
             ),
-            bargap=0.2, # Espaço entre as barras
-            plot_bgcolor='rgba(245, 246, 249, 1)'
+            xaxis= dict(
+                title='',
+                showticklabels=False  # Desativa os rótulos do eixo x
+            ),
+            title= f'Questões por Cargo',
+            margin=dict(t=40, b=50, l=50, r=50),  # Ajuste das margens
         )
+
         return fig
 
     # Função para truncar legendas
