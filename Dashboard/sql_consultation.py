@@ -47,7 +47,7 @@ class SQLConsultation:
             database_list = [{'label': db[0], 'value': db[0]} for db in databases if db[0].endswith('_recursos_dis')]
 
             # Exibir a lista no console (para debug)
-            print("Lista de Databases: ", database_list)
+            # print("Lista de Databases: ", database_list)
 
             return database_list
 
@@ -113,6 +113,7 @@ class SQLConsultation:
             return totalRecursosCargo
 
     def totalRespostasPorCargo(self):
+
         with self.get_connection() as conn:
             cursor = conn.cursor()
             comando = '''
@@ -135,12 +136,46 @@ class SQLConsultation:
             cursor.execute(comando)
             totalRespostaCargo = cursor.fetchall()
 
-            colunasTotalAcesso = [desc[0] for desc in cursor.description]
-            totalRespostaCargo = pd.DataFrame(totalRespostaCargo, columns=colunasTotalAcesso)
+            colunasTotalRespCarg = [desc[0] for desc in cursor.description]
+            totalRespostaCargo = pd.DataFrame(totalRespostaCargo, columns=colunasTotalRespCarg)
 
             # print("Total de Respostas por Cargo:")
             # print(totalRespostaCargo)
             return totalRespostaCargo
+    
+    def totalRespostaPorQuestao(self):
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            comando = '''
+                SELECT 
+                    rec.sigla as Sigla, 
+                    car.CARR as 'Cargo',
+                    rec.questao as 'CodQuestão',
+                    rec.quest_nome as 'Questão',
+                    COUNT(rec.protocolo) as 'Total Recursos',  
+                    COUNT(CASE WHEN rec.respondido = 0 THEN rec.respondido END) as 'Não Respondidos',
+                    COUNT(CASE WHEN rec.respondido = 1 THEN rec.respondido END) AS 'Respondidos' 
+                FROM 
+                    recursos as rec 
+                INNER JOIN 
+                    questao as q 
+                    ON rec.questao = q.IDQUESTAO 
+                    INNER JOIN 
+                        carreira as car 
+                        ON rec.sigla = car.SIGLA 
+                GROUP BY 
+                    rec.questao;
+                '''
+            cursor.execute(comando)
+            totalRespostaQuestao = cursor.fetchall()
+
+            colunasTotalRespQuest = [desc[0] for desc in cursor.description]
+            totalRespostaQuestao = pd.DataFrame(totalRespostaQuestao, columns=colunasTotalRespQuest)
+
+            # print("Class SQL - Colunas:", colunasTotalRespQuest)  # Verifica os nomes das colunas
+            # print("Class SQL - Dados:", totalRespostaQuestao)  # Verifica os dados retornados
+            
+            return totalRespostaQuestao
 
     def totalAcessoSistema(self):
         with self.get_connection() as conn:
