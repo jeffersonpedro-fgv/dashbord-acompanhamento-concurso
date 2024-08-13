@@ -8,7 +8,7 @@ from sql_consultation import SQLConsultation
 class App:
     def __init__(self):
         self.dbManager = SQLConsultation()  # Instância única de SQLConsultation
-        self.graphics = Graphics(self.dbManager)  # Passa a instância para Graphics
+        self.graphics = Graphics(self.dbManager)  # Passando a instância para Graphics
         self.app = Dash(__name__)
         self.totalRecursos = None
         self.totalCandidatos = None
@@ -21,9 +21,9 @@ class App:
         # Atualiza os dados e gráficos
         self.totalRecursos = self.graphics.criaCardTotalRecurso()
         self.totalCandidatos = self.graphics.criaCardTotalCandidato()
-        self.totalAcessos = self.graphics.criarGraficoLineChart()
         self.totalRecursosCargo = self.graphics.criarGraficoDonutChart()
         self.totalRespostasPorCargo = self.graphics.criarGraficoHorizontalBar()
+        self.totalAcessos = self.graphics.criarGraficoLineChart()
 
         print("Class Main - Dados atualizados")
         print(self.totalCandidatos)
@@ -31,10 +31,16 @@ class App:
     def setup_layout(self):
 
         listaDatabases = self.dbManager.list_databases()
+        listaQuestoesCargo = self.dbManager.totalRespostaPorQuestao()
+
+        dropdown_options = [
+            {'label': f"{row['Cargo']} - {row['Questão']}", 'value': row['CodQuestão']}
+            for _, row in listaQuestoesCargo.iterrows()
+        ]
 
         self.update_data()
 
-        # Layout do aplicativo
+        # Layout e Cabeçalho do aplicativo
         self.app.layout = html.Div(
             children=[
                 html.Div(
@@ -57,7 +63,7 @@ class App:
                     ],
                     className='dash-dropdown'
                 ),
-
+                #Div pai dos cards
                 html.Div(
                     children=[
                         html.Div(
@@ -95,7 +101,8 @@ class App:
                     ],
                     className='dash-cards'
                 ),
-
+                
+                #Div pai dos gráficos
                 html.Div(
                     children=[
                         html.Div(
@@ -116,6 +123,23 @@ class App:
                         ),
 
                         html.Div(
+                                children=[
+                                    dcc.Dropdown(
+                                        id='questao-dropdown',
+                                        options=dropdown_options,
+                                        placeholder="Selecione uma questão",
+                                        value=dropdown_options[0]['value'] if dropdown_options else None
+                                    ),
+                                    dcc.Graph(
+                                        id='vertical-bar-chart',
+                                        figure={},
+                                        className='full-width-graph'
+                                    )                      
+                                ],
+                                className='barchart-container'
+                            ),
+
+                        html.Div(
                             children=[
                                 dcc.Graph(
                                     id='line-chart',
@@ -129,6 +153,7 @@ class App:
                     className='dash-content'
                 ),
 
+                #Div pai do rodapé
                 html.Div(
                     children=[
                         html.P(children='Copyright© 2024 Fundação Getulio Vargas. Todos direitos reservados')
@@ -154,6 +179,18 @@ class App:
             now = datetime.now()
             current_time = now.strftime("%d/%m/%Y - %H:%M:%S")
             return f"Atualizado em: {current_time}"
+        
+        #Callback para atualizar o grafico de barras verticais
+        @self.app.callback(
+            Output('vertical-bar-chart', 'figure'),
+            Input('questao-dropdown', 'value')
+        )
+        def update_vertical_chart(selected_questao):
+            if selected_questao is None:
+                return {}
+            
+            fig = self.graphics.criarGaficoVerticalBar(selected_questao)
+            return fig
         
         # Callback para atualizar grafivis e cards
         @self.app.callback([
